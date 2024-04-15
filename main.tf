@@ -207,14 +207,25 @@ resource "ansible_host" "host" {
   }
 }
 
-resource "aws_db_instance" "default" {
-  allocated_storage    = 10
-  db_name              = "mydb"
-  engine               = "mysql"
-  engine_version       = "5.7"
-  instance_class       = "db.t3.micro"
-  username             = "foo"
-  password             = "foobarbaz"
-  parameter_group_name = "default.mysql5.7"
-  skip_final_snapshot  = true
+resource "aws_db_instance" "example" {
+  identifier           = "example-postgres-db"
+  allocated_storage    = 20
+  storage_type         = "gp2"
+  engine               = "postgres"
+  engine_version       = "12.5"
+  instance_class       = "db.t2.micro"
+  username             = "admin"
+  password             = "postgres"
+  parameter_group_name = "default.postgres12"
+  publicly_accessible  = false // Change as needed
+  multi_az             = false // Change as needed
+
+  tags = {
+    Name = "example-postgres-db"
+  }
 }
+
+output "endpoint" {
+  value = aws_db_instance.example.endpoint
+}
+
