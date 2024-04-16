@@ -18,43 +18,6 @@ resource "aws_default_subnet" "foo-az1" {
   }
 }
 
-# INTERNET GATEWAY
-resource "aws_internet_gateway" "foo" {
-  vpc_id = aws_default_vpc.foo.id
-
-  tags = {
-    Name = "all-in-one-infra"
-  }
-}
-
-data "aws_vpc" "selected" {
-  id = aws_default_vpc.foo.id
-}
-
-# ROUTE TABLE
-resource "aws_default_route_table" "example" {
-  default_route_table_id = data.aws_vpc.selected.main_route_table_id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.foo.id
-  }
-
-  tags = {
-    Name = "default"
-  }
-}
-
-# ROUTE TABLE ASSOCIATION to subnet
-resource "aws_route_table_association" "foo" {
-  depends_on = [
-    aws_default_subnet.foo-az1
-  ]
-  subnet_id      = aws_default_subnet.foo-az1.id
-  route_table_id = aws_default_route_table.example.id
-}
-
-
 #SECURITY GROUP
 resource "aws_security_group" "ec2" {
   name        = "ec2-sg"
@@ -208,21 +171,33 @@ resource "ansible_host" "host" {
 }
 
 resource "aws_db_instance" "example" {
-  identifier           = "example-postgres-db"
-  allocated_storage    = 20
-  storage_type         = "gp2"
-  engine               = "postgres"
-  engine_version       = "12.5"
-  instance_class       = "db.t2.micro"
-  username             = "admin"
-  password             = "postgres"
-  parameter_group_name = "default.postgres12"
-  publicly_accessible  = false // Change as needed
-  multi_az             = false // Change as needed
+  identifier            = "all-in-one-db"
+  allocated_storage     = 20
+  storage_type          = "gp2"
+  engine                = "postgres"
+  engine_version        = "16.2"
+  instance_class        = "db.m5d.large"
+  username              = "allinone"
+  password              = random_password.postgres_password.result
+  parameter_group_name  = "default.postgres12"
+  publicly_accessible   = false // Change as needed
+  multi_az              = true
 
   tags = {
-    Name = "example-postgres-db"
+    Name                = "example-postgres-db"
   }
+}
+
+resource "random_password" "postgres_password" {
+  length           = 16
+  special          = true
+  override_special = "_%@"
+}
+
+resource "postgresql_role" "example_user" {
+  name     = "allinone-infra_user"
+  password = random_password.postgres_password.result
+  login    = true
 }
 
 output "endpoint" {

@@ -9,6 +9,11 @@ terraform {
       version = "~> 1.2.0"
       source  = "ansible/ansible"
     }
+
+    postgresql = {
+      source  = "cyrilgdn/postgresql"
+      version = "1.22.0"
+    }
   }
   backend "s3" {
     bucket = "tfpocbucket001"
@@ -19,4 +24,11 @@ terraform {
 
 provider "aws" {
   region = "eu-north-1"
+}
+
+provider "postgresql" {
+  host     = "localhost"
+  port     = 5432
+  username = "postgres"
+  password = random_password.postgres_password.result
 }
