@@ -3,26 +3,20 @@ locals {
 }
 
 #VPC
-resource "aws_default_vpc" "foo" {
-  tags = {
-    Name = "default"
-  }
+data "aws_vpc" "vpc" {
+  
 }
 
 # SUBNET
-resource "aws_default_subnet" "foo-az1" {
+data "aws_subnet" "az-1a" {
   availability_zone = "eu-north-1a"
-
-  tags = {
-    Name = "default"
-  }
 }
 
 #SECURITY GROUP
 resource "aws_security_group" "ec2" {
   name        = "ec2-sg"
   description = "Allow SSH and Http inbound traffic"
-  vpc_id      = aws_default_vpc.foo.id
+  vpc_id      = data.aws_vpc.vpc.id
 
   ingress {
     from_port   = 22
@@ -60,7 +54,7 @@ resource "aws_security_group" "ec2" {
 #NETWORK INTERFACE
 resource "aws_network_interface" "foo" {
   count     = local.instance_count
-  subnet_id = aws_default_subnet.foo-az1.id
+  subnet_id = data.aws_subnet.az-1a.id
 
   security_groups = [aws_security_group.ec2.id]
   tags = {
@@ -121,7 +115,7 @@ resource "aws_efs_file_system" "foo" {
 resource "aws_security_group" "efs" {
   name        = "efs-sg"
   description = "Allow ec2-sg will talk to this efs"
-  vpc_id      = aws_default_vpc.foo.id
+  vpc_id      = data.aws_vpc.vpc.id
 
   ingress {
     from_port = 0
@@ -138,7 +132,7 @@ resource "aws_security_group" "efs" {
 
 resource "aws_efs_mount_target" "foo" {
   file_system_id  = aws_efs_file_system.foo.id
-  subnet_id       = aws_default_subnet.foo-az1.id
+  subnet_id       = data.aws_subnet.az-1a.id
   security_groups = [aws_security_group.efs.id]
 }
 
