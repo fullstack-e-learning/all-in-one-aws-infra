@@ -170,37 +170,25 @@ resource "ansible_host" "host" {
   }
 }
 
-resource "aws_db_instance" "example" {
-  identifier            = "all-in-one-db"
-  allocated_storage     = 20
-  storage_type          = "gp2"
+resource "aws_db_instance" "postgresdb" {
+  identifier            = "allinone-postgres-db"
+  allocated_storage     = 20 
   engine                = "postgres"
-  engine_version        = "16.2"
-  instance_class        = "db.m5d.large"
-  username              = "allinone"
+  engine_version        = "16.2" 
+  instance_class        = "db.t3.micro" 
+  username              = "postgres" 
   password              = random_password.postgres_password.result
-  parameter_group_name  = "default.postgres12"
-  publicly_accessible   = false // Change as needed
-  multi_az              = true
-
-  tags = {
-    Name                = "example-postgres-db"
-  }
+  publicly_accessible   = true 
+  skip_final_snapshot   = true
 }
 
 resource "random_password" "postgres_password" {
   length           = 16
   special          = true
-  override_special = "_%@"
-}
-
-resource "postgresql_role" "example_user" {
-  name     = "allinone-infra_user"
-  password = random_password.postgres_password.result
-  login    = true
+  override_special = "!@%^"
 }
 
 output "endpoint" {
-  value = aws_db_instance.example.endpoint
+  value = aws_db_instance.postgresdb.endpoint
 }
 
