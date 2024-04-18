@@ -2,14 +2,23 @@ locals {
   instance_count = 2
 }
 
+variable "availability_zones" {
+  type    = list(string)
+  default = ["eu-north-1a", "eu-north-1b", "eu-north-1c"]
+}
+
+
 #VPC
 data "aws_vpc" "vpc" {
-  
+
 }
 
 # SUBNET
 data "aws_subnet" "az-1a" {
   availability_zone = "eu-north-1a"
+}
+data "aws_subnet" "az-1b" {
+  availability_zone = "eu-north-1b"
 }
 
 #SECURITY GROUP
@@ -53,8 +62,8 @@ resource "aws_security_group" "ec2" {
 
 #NETWORK INTERFACE
 resource "aws_network_interface" "foo" {
-  count     = local.instance_count
-  subnet_id = data.aws_subnet.az-1a.id
+  count     = length(var.availability_zones)
+  subnet_id = count.index == 0 ? data.aws_subnet.az-1a.id : data.aws_subnet.az-1b.id
 
   security_groups = [aws_security_group.ec2.id]
   tags = {
@@ -79,6 +88,8 @@ resource "aws_instance" "foo" {
   count         = local.instance_count
   ami           = "ami-0014ce3e52359afbd"
   instance_type = "t3.micro"
+
+  availability_zone = element(var.availability_zones, count.index)
 
   network_interface {
     network_interface_id = aws_network_interface.foo[count.index].id
@@ -165,24 +176,51 @@ resource "ansible_host" "host" {
 }
 
 resource "aws_db_instance" "postgresdb" {
-  identifier            = "allinone-postgres-db"
-  allocated_storage     = 20 
-  engine                = "postgres"
-  engine_version        = "16.2" 
-  instance_class        = "db.t3.micro" 
-  username              = "postgres" 
-  password              = random_password.postgres_password.result
-  publicly_accessible   = true 
-  skip_final_snapshot   = true
+  identifier          = "allinone-postgres-db"
+  allocated_storage   = 20
+  engine              = "postgres"
+  engine_version      = "16.2"
+  instance_class      = "db.t3.micro"
+  username            = "postgres"
+  password            = random_password.postgres_password.result
+  publicly_accessible = true
+  skip_final_snapshot = true
 }
 
 resource "random_password" "postgres_password" {
   length           = 16
   special          = true
-  override_special = "!@%^"
+  override_special = "/@%^"
 }
 
 output "endpoint" {
   value = aws_db_instance.postgresdb.endpoint
 }
 
+resource "aws_elb" "lb" {
+  name               = "allinone-lb"
+  availability_zones = ["eu-north-1a", "eu-north-1b"]
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "HTTP"
+    lb_port           = 80
+    lb_protocol       = "HTTP"
+  }
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    target              = "HTTP:80/"
+    interval            = 30
+  }
+
+  instances                   = [aws_instance.foo[0].id, aws_instance.foo[1].id]
+  cross_zone_load_balancing   = true
+  idle_timeout                = 40
+  
+  tags = {
+    Name = "all-in-one-lb"
+  }
+}

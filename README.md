@@ -1,1 +1,0 @@
-# allinone-aws-infra
