@@ -216,10 +216,10 @@ resource "aws_elb" "lb" {
     interval            = 30
   }
 
-  instances                   = [aws_instance.foo[0].id, aws_instance.foo[1].id]
-  cross_zone_load_balancing   = true
-  idle_timeout                = 40
-  
+  instances                 = [aws_instance.foo[0].id, aws_instance.foo[1].id]
+  cross_zone_load_balancing = true
+  idle_timeout              = 40
+
   tags = {
     Name = "all-in-one-lb"
   }
