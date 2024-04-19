@@ -1,5 +1,8 @@
 locals {
   instance_count = 2
+  tags = {
+    Name = "all-in-one-lb"
+  }
 }
 
 variable "availability_zones" {
@@ -55,9 +58,7 @@ resource "aws_security_group" "ec2" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "all-in-one-infra"
-  }
+  tags = local.tags
 }
 
 #NETWORK INTERFACE
@@ -66,9 +67,7 @@ resource "aws_network_interface" "foo" {
   subnet_id = count.index == 0 ? data.aws_subnet.az-1a.id : data.aws_subnet.az-1b.id
 
   security_groups = [aws_security_group.ec2.id]
-  tags = {
-    Name = "all-in-one-infra"
-  }
+  tags = local.tags
 }
 
 resource "tls_private_key" "foo" {
@@ -102,9 +101,7 @@ resource "aws_instance" "foo" {
 
   key_name = aws_key_pair.foo.key_name
 
-  tags = {
-    Name = "all-in-one-infra"
-  }
+  tags = local.tags
 }
 
 # EFS
@@ -118,9 +115,7 @@ resource "aws_efs_file_system" "foo" {
     transition_to_ia = "AFTER_30_DAYS"
   }
 
-  tags = {
-    Name = "all-in-one-infra"
-  }
+  tags = local.tags
 }
 
 resource "aws_security_group" "efs" {
@@ -136,9 +131,7 @@ resource "aws_security_group" "efs" {
     security_groups = [aws_security_group.ec2.id]
   }
 
-  tags = {
-    Name = "all-in-one-infra"
-  }
+  tags = local.tags
 }
 
 resource "aws_efs_mount_target" "foo" {
@@ -161,20 +154,6 @@ output "tls_private_key" {
   sensitive = true
 }
 
-resource "ansible_host" "host" {
-  count  = local.instance_count
-  name   = aws_instance.foo[count.index].public_ip
-  groups = ["ec2"]
-  variables = {
-    ansible_user                 = "ubuntu"
-    ansible_ssh_private_key_file = "id_rsa.pem"
-    ansible_connection           = "ssh"
-    ansible_ssh_common_args      = "-o StrictHostKeyChecking=no"
-    mount_path                   = "/home/ubuntu/efs"
-    efs_endpoint                 = "${aws_efs_file_system.foo.dns_name}:/"
-  }
-}
-
 resource "aws_db_instance" "postgresdb" {
   identifier           = "allinone-postgres-db"
   allocated_storage    = 20
@@ -191,15 +170,13 @@ resource "aws_db_instance" "postgresdb" {
 resource "random_password" "postgres_password" {
   length           = 16
   special          = true
-  override_special = "/@%^"
+  override_special = "/@"
 }
 
 resource "aws_db_subnet_group" "my_subnet_group" {
   name       = "my-db-subnet-group"
   subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
-  tags = {
-    Name = "My DB Subnet Group"
-  }
+  tags = local.tags
 }
 
 output "endpoint" {
@@ -229,8 +206,24 @@ resource "aws_elb" "lb" {
   cross_zone_load_balancing = true
   idle_timeout              = 40
 
-  tags = {
-    Name = "all-in-one-lb"
-  }
+  tags = local.tags
 }
 
+resource "ansible_host" "host" {
+  count  = local.instance_count
+  name   = aws_instance.foo[count.index].public_ip
+  groups = ["ec2"]
+  variables = {
+    ansible_user                 = "ubuntu"
+    ansible_ssh_private_key_file = "id_rsa.pem"
+    ansible_connection           = "ssh"
+    ansible_ssh_common_args      = "-o StrictHostKeyChecking=no"
+    mount_path                   = "/home/ubuntu/efs"
+    efs_endpoint                 = "${aws_efs_file_system.foo.dns_name}:/"
+    db_host                      = aws_db_instance.postgresdb.address
+    db_port                      = aws_db_instance.postgresdb.port
+    db_name                      = aws_db_instance.postgresdb.db_name
+    db_username                  = aws_db_instance.postgresdb.username
+    db_password                  = random_password.postgres_password.result
+  }
+}
