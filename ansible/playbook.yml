@@ -1,0 +1,59 @@
+---
+- name: Get ready for all-in-one application deployment
+  hosts: ec2
+  remote_user: ubuntu
+  become: yes
+  gather_facts: true
+  tasks:
+  - debug:
+      msg: |
+        "mount_path:{{ hostvars[inventory_hostname].mount_path }} , efs_endpoint: {{ hostvars[inventory_hostname].efs_endpoint }}"
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+  - name: Install NFS client
+    apt:
+      name: nfs-common
+      state: present
+  - name: Ensure mount directory exists.
+    file:
+      path: "{{ hostvars[inventory_hostname].mount_path }}"
+      state: directory
+      mode: 0755
+      owner: ubuntu
+      group: ubuntu
+
+  - name: Ensure EFS volume is mounted.
+    mount:
+      name: "{{ hostvars[inventory_hostname].mount_path }}"
+      src: "{{ hostvars[inventory_hostname].efs_endpoint }}"
+      fstype: nfs4
+      opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
+      state: mounted
+  
+  - name: Ensure /home/ubuntu/app directory exists.
+    file:
+      path: "/home/ubuntu/app"
+      state: directory
+      mode: 0755
+      owner: ubuntu
+      group: ubuntu
+  
+  - name: populate /etc/environment
+    lineinfile:
+      path: "/etc/environment"
+      state: present
+      regexp: "^{{ item.key }}="
+      line: "{{ item.key }}={{ item.value}}"
+    with_items:
+      - key: BASE_PATH 
+        value : "{{ hostvars[inventory_hostname].mount_path }}"
+      - key: DB_HOST
+        value : "jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
+      - key: DB_USERNAME 
+        value : "{{ hostvars[inventory_hostname].db_username }}"
+      - key: DB_PASSWORD
+        value : "{{ hostvars[inventory_hostname].db_password }}"
+  - name: Install JDK
+    #https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
+  - name: systemctl service
