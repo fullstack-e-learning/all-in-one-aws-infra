@@ -7,8 +7,9 @@
   tasks:
   - debug:
       msg: |
-        mount_path:{{ hostvars[inventory_hostname].mount_path }}
-        efs_endpoint: {{ hostvars[inventory_hostname].efs_endpoint }}
+        "mount_path:{{ hostvars[inventory_hostname].mount_path }}"
+        
+        "efs_endpoint: {{ hostvars[inventory_hostname].efs_endpoint }}"
   - name: Update apt cache
     apt:
       update_cache: yes
