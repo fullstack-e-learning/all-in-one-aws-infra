@@ -194,6 +194,14 @@ resource "random_password" "postgres_password" {
   override_special = "/@%^"
 }
 
+resource "aws_db_subnet_group" "my_subnet_group" {
+  name       = "my-db-subnet-group"
+  subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
+  tags = {
+    Name = "My DB Subnet Group"
+  }
+}
+
 output "endpoint" {
   value = aws_db_instance.postgresdb.endpoint
 }
@@ -226,10 +234,3 @@ resource "aws_elb" "lb" {
   }
 }
 
-resource "aws_db_subnet_group" "my_subnet_group" {
-  name       = "my-db-subnet-group"
-  subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
-  tags = {
-    Name = "My DB Subnet Group"
-  }
-}
