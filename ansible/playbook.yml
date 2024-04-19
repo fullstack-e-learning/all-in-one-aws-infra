@@ -80,12 +80,12 @@
       dest: /etc/systemd/system/all-in-one.service
     notify:
       - Reload systemd
-  # - name: Start the application
-  #   ansible.builtin.systemd_service:
-  #     state: started
-  #     name: all-in-one.service
+  - name: Start the application
+    ansible.builtin.systemd_service:
+      state: started
+      name: all-in-one.service
   handlers:
     - name: Reload systemd
-      systemd:
+      ansible.builtin.systemd_service:
         name: all-in-one.service
-        state: reloaded
+        daemon_reload: true
