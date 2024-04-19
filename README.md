@@ -29,4 +29,6 @@ ansible
 ansible-galaxy collection install cloud.terraform
 # overview inventory
 ansible-inventory -i ansible/inventory.yml --list --vars
+# playbook
+ansible-playbook -i ansible/inventory.yml ansible/playbook.yml -e application_version=1.0.13 
 ```

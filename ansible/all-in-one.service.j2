@@ -1,0 +1,15 @@
+[Unit]
+Description=all-in-one MVC webapp
+After=network.target
+
+[Service]
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/app
+ExecStart=/home/ubuntu/app/jdk-21.0.2/bin/java -jar /home/ubuntu/app/all-in-one-{{ application_version }}.jar
+SuccessExitStatus=143
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

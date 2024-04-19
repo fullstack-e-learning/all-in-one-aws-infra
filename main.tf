@@ -240,7 +240,7 @@ resource "aws_lb_target_group_attachment" "foo" {
 
   target_group_arn = aws_lb_target_group.foo.arn
   target_id        = aws_instance.foo[count.index].id
-  port             = 80
+  port             = 8080
 }
 
 resource "aws_lb" "foo" {
