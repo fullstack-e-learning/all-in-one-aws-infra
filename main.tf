@@ -176,15 +176,16 @@ resource "ansible_host" "host" {
 }
 
 resource "aws_db_instance" "postgresdb" {
-  identifier          = "allinone-postgres-db"
-  allocated_storage   = 20
-  engine              = "postgres"
-  engine_version      = "16.2"
-  instance_class      = "db.t3.micro"
-  username            = "postgres"
-  password            = random_password.postgres_password.result
-  publicly_accessible = true
-  skip_final_snapshot = true
+  identifier           = "allinone-postgres-db"
+  allocated_storage    = 20
+  engine               = "postgres"
+  engine_version       = "16.2"
+  instance_class       = "db.t3.micro"
+  username             = "postgres"
+  password             = random_password.postgres_password.result
+  publicly_accessible  = true
+  skip_final_snapshot  = true
+  db_subnet_group_name = aws_db_subnet_group.my_subnet_group.name
 }
 
 resource "random_password" "postgres_password" {
@@ -222,5 +223,13 @@ resource "aws_elb" "lb" {
 
   tags = {
     Name = "all-in-one-lb"
+  }
+}
+
+resource "aws_db_subnet_group" "my_subnet_group" {
+  name       = "my-db-subnet-group"
+  subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
+  tags = {
+    Name = "My DB Subnet Group"
   }
 }
