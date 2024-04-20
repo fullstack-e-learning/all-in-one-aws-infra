@@ -219,7 +219,7 @@ resource "aws_lb_listener" "listener_80" {
   protocol          = "HTTP"
 
   default_action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.alb-tg.arn
   }
 }
@@ -232,9 +232,9 @@ resource "aws_lb_target_group_attachment" "my_instance_attachment" {
 }
 
 resource "ansible_host" "host" {
-  count  = local.instance_count
-  name   = aws_instance.foo[count.index].public_ip
-  
+  count = local.instance_count
+  name  = aws_instance.foo[count.index].public_ip
+
   groups = ["ec2"]
   variables = {
     ansible_user                 = "ubuntu"
