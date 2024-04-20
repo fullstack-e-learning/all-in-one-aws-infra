@@ -1,0 +1,17 @@
+---
+- name: Download JAR file from GitHub
+  hosts: ec2
+  remote_user: ubuntu
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Ensure wget is installed
+      package:
+        name: wget
+        state: present
+
+    - name: Download JAR file
+      command: "wget https://github.com/fullstack-e-learning/all-in-one/releases/download/v1.0.14/all-in-one-1.0.14.jar"
+      args:
+        chdir: "/home/ubuntu/app"

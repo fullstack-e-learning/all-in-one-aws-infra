@@ -134,9 +134,15 @@ resource "aws_security_group" "efs" {
   tags = local.tags
 }
 
-resource "aws_efs_mount_target" "foo" {
+resource "aws_efs_mount_target" "az-1a" {
   file_system_id  = aws_efs_file_system.foo.id
   subnet_id       = data.aws_subnet.az-1a.id
+  security_groups = [aws_security_group.efs.id]
+}
+
+resource "aws_efs_mount_target" "az-1b" {
+  file_system_id  = aws_efs_file_system.foo.id
+  subnet_id       = data.aws_subnet.az-1b.id
   security_groups = [aws_security_group.efs.id]
 }
 
@@ -165,17 +171,17 @@ resource "aws_db_instance" "postgresdb" {
   password             = random_password.postgres_password.result
   publicly_accessible  = true
   skip_final_snapshot  = true
-  db_subnet_group_name = aws_db_subnet_group.my_subnet_group.name
+  db_subnet_group_name = aws_db_subnet_group.db_subnet_group.name
 }
 
 resource "random_password" "postgres_password" {
   length           = 16
   special          = true
-  override_special = "/@%"
+  override_special = "!#$%&*()-_=+[]{}<>:?"
 }
 
-resource "aws_db_subnet_group" "my_subnet_group" {
-  name       = "my-db-subnet-group"
+resource "aws_db_subnet_group" "db_subnet_group" {
+  name       = "db-subnet-group"
   subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
   tags       = local.tags
 }
