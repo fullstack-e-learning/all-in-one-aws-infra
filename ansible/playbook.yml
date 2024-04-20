@@ -2,7 +2,7 @@
 - name: Get ready for all-in-one application deployment
   hosts: ec2
   remote_user: ubuntu
-  become: yes
+  become: true
   gather_facts: true
   tasks:
   - debug:
