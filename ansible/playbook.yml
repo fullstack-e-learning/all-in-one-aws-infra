@@ -6,10 +6,9 @@
   gather_facts: true
   vars:
     deployment_version: 1.0.12
+    mount_directory: /home/spa349/efs
+    app_directory: /home/spa349/app
   tasks:
-  - debug:
-      msg: |
-        "mount_path:{{ hostvars[inventory_hostname].mount_path }} , efs_endpoint: {{ hostvars[inventory_hostname].efs_endpoint }}"
   - name: Update apt cache
     apt:
       update_cache: yes
@@ -19,28 +18,23 @@
       state: present
   - name: Ensure mount directory exists.
     file:
-      path: "{{ hostvars[inventory_hostname].mount_path }}"
+      path: "{{ item  }}"
       state: directory
       mode: 0755
       owner: ubuntu
       group: ubuntu
+    with_items:
+      - "{{ mount_directory }}"
+      - "{{ app_directory }}"
 
   - name: Ensure EFS volume is mounted.
     mount:
-      name: "{{ hostvars[inventory_hostname].mount_path }}"
+      name: "{{ mount_directory }}"
       src: "{{ hostvars[inventory_hostname].efs_endpoint }}"
       fstype: nfs4
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
       state: mounted
-  
-  - name: Ensure /home/ubuntu/app directory exists.
-    file:
-      path: "/home/ubuntu/app"
-      state: directory
-      mode: 0755
-      owner: ubuntu
-      group: ubuntu
-  
+  #TODO: remove this, If not needed
   - name: populate /etc/environment
     lineinfile:
       path: "/etc/environment"
@@ -48,10 +42,9 @@
       regexp: "^{{ item.key }}="
       line: "{{ item.key }}={{ item.value}}"
     no_log: True
-    
     with_items:
       - key: BASE_PATH 
-        value : "{{ hostvars[inventory_hostname].mount_path }}"
+        value : "{{ mount_directory }}"
       - key: DB_HOST
         value : "jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
       - key: DB_USERNAME 
@@ -62,7 +55,7 @@
   - name: Install JDK
     ansible.builtin.unarchive:
       src: https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
-      dest: /home/ubuntu/app
+      dest: "{{ app_directory }}"
       remote_src: yes
   
   - name: Download Application Jar
@@ -70,7 +63,7 @@
       application_version: 1.0.14
     ansible.builtin.get_url:
       url: https://github.com/fullstack-e-learning/all-in-one/releases/download/v{{ application_version }}/all-in-one-{{ application_version }}.jar
-      dest: /home/ubuntu/app
+      dest: "{{ app_directory }}"
       #mode: '664'
   - name: Systemctl service
     vars:
@@ -80,10 +73,21 @@
       dest: /etc/systemd/system/all-in-one.service
     notify:
       - Reload systemd
+  
   - name: Start the application
     ansible.builtin.systemd_service:
-      state: started
+      state: reloaded
       name: all-in-one.service
+  
+  - name: Check that a page returns successfully but fail if the word AWESOME is not in the page contents
+    ansible.builtin.uri:
+      url: http://localhost:8080/actuator/health
+      method: GET
+    register: _result
+    until: _result.status == 200
+    retries: 5
+    delay: 5
+  
   handlers:
     - name: Reload systemd
       ansible.builtin.systemd_service:
