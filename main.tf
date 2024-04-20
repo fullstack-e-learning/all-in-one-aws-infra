@@ -67,7 +67,7 @@ resource "aws_network_interface" "foo" {
   subnet_id = count.index == 0 ? data.aws_subnet.az-1a.id : data.aws_subnet.az-1b.id
 
   security_groups = [aws_security_group.ec2.id]
-  tags = local.tags
+  tags            = local.tags
 }
 
 resource "tls_private_key" "foo" {
@@ -154,6 +154,7 @@ output "tls_private_key" {
   sensitive = true
 }
 
+# Postgres DB
 resource "aws_db_instance" "postgresdb" {
   identifier           = "allinone-postgres-db"
   allocated_storage    = 20
@@ -170,48 +171,70 @@ resource "aws_db_instance" "postgresdb" {
 resource "random_password" "postgres_password" {
   length           = 16
   special          = true
-  override_special = "/@"
+  override_special = "/@%"
 }
 
 resource "aws_db_subnet_group" "my_subnet_group" {
   name       = "my-db-subnet-group"
   subnet_ids = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
-  tags = local.tags
+  tags       = local.tags
 }
 
 output "endpoint" {
   value = aws_db_instance.postgresdb.endpoint
 }
 
-resource "aws_elb" "lb" {
+# ALB
+resource "aws_lb" "alb" {
   name               = "allinone-lb"
-  availability_zones = ["eu-north-1a", "eu-north-1b"]
-
-  listener {
-    instance_port     = 80
-    instance_protocol = "HTTP"
-    lb_port           = 80
-    lb_protocol       = "HTTP"
-  }
-
-  health_check {
-    healthy_threshold   = 2
-    unhealthy_threshold = 2
-    timeout             = 3
-    target              = "HTTP:80/"
-    interval            = 30
-  }
-
-  instances                 = [aws_instance.foo[0].id, aws_instance.foo[1].id]
-  cross_zone_load_balancing = true
-  idle_timeout              = 40
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.ec2.id]
+  subnets            = [data.aws_subnet.az-1a.id, data.aws_subnet.az-1b.id]
 
   tags = local.tags
+}
+
+resource "aws_lb_target_group" "alb-tg" {
+  name        = "allinone-tg"
+  target_type = "instance"
+  port        = 8080
+  protocol    = "HTTP"
+  vpc_id      = data.aws_vpc.vpc.id
+
+  health_check {
+    path                = "/index.html"
+    protocol            = "HTTP"
+    port                = "traffic-port"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "listener_80" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type = "forward"
+    target_group_arn = aws_lb_target_group.alb-tg.arn
+  }
+}
+
+resource "aws_lb_target_group_attachment" "my_instance_attachment" {
+  count            = local.instance_count
+  target_group_arn = aws_lb_target_group.alb-tg.arn
+  target_id        = aws_instance.foo.*.id[count.index]
+  port             = 80
 }
 
 resource "ansible_host" "host" {
   count  = local.instance_count
   name   = aws_instance.foo[count.index].public_ip
+  
   groups = ["ec2"]
   variables = {
     ansible_user                 = "ubuntu"
