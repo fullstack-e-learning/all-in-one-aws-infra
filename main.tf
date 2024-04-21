@@ -231,12 +231,15 @@ resource "aws_lb_target_group" "foo" {
     path     = "/actuator/health"
     protocol = "HTTP"
   }
-  
+  stickiness {
+    type = "lb_cookie"
+  }
+
   tags = local.tags
 }
 
 resource "aws_lb_target_group_attachment" "foo" {
-  count            = local.instance_count
+  count = local.instance_count
 
   target_group_arn = aws_lb_target_group.foo.arn
   target_id        = aws_instance.foo[count.index].id
@@ -251,7 +254,7 @@ resource "aws_lb" "foo" {
   subnets            = [data.aws_subnet.az1a.id, data.aws_subnet.az1b.id]
 
   enable_deletion_protection = false
-
+  preserve_host_header       = true
   # access_logs {
   #   bucket  = aws_s3_bucket.lb_logs.id
   #   prefix  = "test-lb"

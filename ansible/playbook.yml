@@ -5,9 +5,9 @@
   become: yes
   gather_facts: true
   vars:
-    deployment_version: 1.0.12
-    mount_directory: /home/spa349/efs
-    app_directory: /home/spa349/app
+    deployment_version: 1.0.14
+    mount_directory: /home/ubuntu/efs
+    app_directory: /home/ubuntu/app
   tasks:
   - name: Update apt cache
     apt:
@@ -59,15 +59,11 @@
       remote_src: yes
   
   - name: Download Application Jar
-    vars:
-      application_version: 1.0.14
     ansible.builtin.get_url:
-      url: https://github.com/fullstack-e-learning/all-in-one/releases/download/v{{ application_version }}/all-in-one-{{ application_version }}.jar
+      url: https://github.com/fullstack-e-learning/all-in-one/releases/download/v{{ deployment_version }}/all-in-one-{{ deployment_version }}.jar
       dest: "{{ app_directory }}"
       #mode: '664'
   - name: Systemctl service
-    vars:
-      application_version: 1.0.14
     template:
       src: all-in-one.service.j2
       dest: /etc/systemd/system/all-in-one.service
@@ -76,10 +72,11 @@
   
   - name: Start the application
     ansible.builtin.systemd_service:
-      state: reloaded
+      state: restarted
+      enabled: true
       name: all-in-one.service
   
-  - name: Check that a page returns successfully but fail if the word AWESOME is not in the page contents
+  - name: Check that a /actuator/health endpoint of the applicatio return 200 http status code
     ansible.builtin.uri:
       url: http://localhost:8080/actuator/health
       method: GET
