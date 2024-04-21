@@ -35,22 +35,22 @@
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
       state: mounted
   #TODO: remove this, If not needed
-  - name: populate /etc/environment
-    lineinfile:
-      path: "/etc/environment"
-      state: present
-      regexp: "^{{ item.key }}="
-      line: "{{ item.key }}={{ item.value}}"
-    no_log: True
-    with_items:
-      - key: BASE_PATH 
-        value : "{{ mount_directory }}"
-      - key: DB_HOST
-        value : "jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
-      - key: DB_USERNAME 
-        value : "{{ hostvars[inventory_hostname].db_username }}"
-      - key: DB_PASSWORD
-        value : "{{ hostvars[inventory_hostname].db_password }}"
+  # - name: populate /etc/environment
+  #   lineinfile:
+  #     path: "/etc/environment"
+  #     state: present
+  #     regexp: "^{{ item.key }}="
+  #     line: "{{ item.key }}={{ item.value}}"
+  #   no_log: True
+  #   with_items:
+  #     - key: BASE_PATH 
+  #       value : "{{ mount_directory }}"
+  #     - key: DB_HOST
+  #       value : "jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
+  #     - key: DB_USERNAME 
+  #       value : "{{ hostvars[inventory_hostname].db_username }}"
+  #     - key: DB_PASSWORD
+  #       value : "{{ hostvars[inventory_hostname].db_password }}"
   
   - name: Install JDK
     ansible.builtin.unarchive:
