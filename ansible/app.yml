@@ -11,7 +11,29 @@
         name: wget
         state: present
 
+    - name: Check if JAR file already exists
+      stat:
+        path: "/home/ubuntu/app/all-in-one-1.0.14.jar"
+      register: jar_file
+
     - name: Download JAR file
       command: "wget https://github.com/fullstack-e-learning/all-in-one/releases/download/v1.0.14/all-in-one-1.0.14.jar"
+      args:
+        chdir: "/home/ubuntu/app"
+      when: not jar_file.stat.exists
+
+    - name: Check if OpenJDK tarball already exists
+      stat:
+        path: "/home/ubuntu/app/openjdk-21+35_linux-x64_bin.tar.gz"
+      register: openjdk_file
+
+    - name: Download OpenJDK tarball
+      command: "wget https://download.java.net/openjdk/jdk21/ri/openjdk-21+35_linux-x64_bin.tar.gz"
+      args:
+        chdir: "/home/ubuntu/app"
+      when: not openjdk_file.stat.exists
+
+    - name: Extract OpenJDK tarball
+      command: "tar -xzvf openjdk-21+35_linux-x64_bin.tar.gz"
       args:
         chdir: "/home/ubuntu/app"
