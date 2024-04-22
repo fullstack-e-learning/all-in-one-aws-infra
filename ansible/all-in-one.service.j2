@@ -1,0 +1,14 @@
+[Unit]
+Description=all-in-one application
+After=multi-user.target
+
+[Service]
+Environment="BASE_PATH={{ mount_directory }}"
+Environment="DB_HOST=jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
+Environment="DB_USERNAME={{ hostvars[inventory_hostname].db_username }}"
+Environment="DB_PASSWORD={{ hostvars[inventory_hostname].db_password }}"
+ExecStart={{ app_directory }}/jdk-21.0.2/bin/java -jar {{ app_directory }}/all-in-one-{{ deployment_version }}.jar
+Type=simple
+
+[Install]
+WantedBy=multi-user.target

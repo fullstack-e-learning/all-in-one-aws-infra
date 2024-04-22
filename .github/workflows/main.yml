@@ -14,6 +14,11 @@ on:
         options:
           - apply
           - destroy
+      applicationVersion:
+        description: Application Version
+        required: false
+        default: 'latest'
+        type: string
 
 permissions:
   pull-requests: write
@@ -121,14 +126,16 @@ jobs:
     - name: Prepare Keyfile
       if: inputs.operation == 'apply' && github.event_name != 'pull_request'
       run: |
-        terraform output -raw tls_private_key >> ansible/id_rsa.pem
-        chmod 400 ansible/id_rsa.pem
-
+        terraform output -raw tls_private_key >> id_rsa.pem
+        chmod 400 id_rsa.pem
+    - name: Application Version
+      if: inputs.applicationVersion == 'latest'
+      run: echo "Evaluate Version"
+    
     - name: Ansible Playbook
       if: inputs.operation == 'apply' && github.event_name != 'pull_request'
       run: |
-        ansible -i inventory.ini all -m ping
-      working-directory: ansible
+        ansible-playbook -i ansible/inventory.yml ansible/playbook.yml -e deployment_version=1.0.16
   
   terraform-destroy:
     runs-on: ubuntu-latest

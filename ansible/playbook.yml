@@ -1,0 +1,92 @@
+---
+- name: Get ready for all-in-one application deployment
+  hosts: ec2
+  remote_user: ubuntu
+  become: yes
+  gather_facts: true
+  vars:
+    deployment_version: 1.0.14
+    mount_directory: /home/ubuntu/efs
+    app_directory: /home/ubuntu/app
+  tasks:
+  - name: Update apt cache
+    apt:
+      update_cache: yes
+  - name: Install NFS client
+    apt:
+      name: nfs-common
+      state: present
+  - name: Ensure mount directory exists.
+    file:
+      path: "{{ item  }}"
+      state: directory
+      mode: 0755
+      owner: ubuntu
+      group: ubuntu
+    with_items:
+      - "{{ mount_directory }}"
+      - "{{ app_directory }}"
+
+  - name: Ensure EFS volume is mounted.
+    mount:
+      name: "{{ mount_directory }}"
+      src: "{{ hostvars[inventory_hostname].efs_endpoint }}"
+      fstype: nfs4
+      opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
+      state: mounted
+  #TODO: remove this, If not needed
+  # - name: populate /etc/environment
+  #   lineinfile:
+  #     path: "/etc/environment"
+  #     state: present
+  #     regexp: "^{{ item.key }}="
+  #     line: "{{ item.key }}={{ item.value}}"
+  #   no_log: True
+  #   with_items:
+  #     - key: BASE_PATH 
+  #       value : "{{ mount_directory }}"
+  #     - key: DB_HOST
+  #       value : "jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}"
+  #     - key: DB_USERNAME 
+  #       value : "{{ hostvars[inventory_hostname].db_username }}"
+  #     - key: DB_PASSWORD
+  #       value : "{{ hostvars[inventory_hostname].db_password }}"
+  
+  - name: Install JDK
+    ansible.builtin.unarchive:
+      src: https://download.java.net/java/GA/jdk21.0.2/f2283984656d49d69e91c558476027ac/13/GPL/openjdk-21.0.2_linux-x64_bin.tar.gz
+      dest: "{{ app_directory }}"
+      remote_src: yes
+  
+  - name: Download Application Jar
+    ansible.builtin.get_url:
+      url: https://github.com/fullstack-e-learning/all-in-one/releases/download/v{{ deployment_version }}/all-in-one-{{ deployment_version }}.jar
+      dest: "{{ app_directory }}"
+      #mode: '664'
+  - name: Systemctl service
+    template:
+      src: all-in-one.service.j2
+      dest: /etc/systemd/system/all-in-one.service
+    notify:
+      - Reload systemd
+  
+  - name: Start the application
+    ansible.builtin.systemd_service:
+      state: restarted
+      enabled: true
+      name: all-in-one.service
+  
+  - name: Check that a /actuator/health endpoint of the applicatio return 200 http status code
+    ansible.builtin.uri:
+      url: http://localhost:8080/actuator/health
+      method: GET
+    register: _result
+    until: _result.status == 200
+    retries: 5
+    delay: 5
+  
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd_service:
+        name: all-in-one.service
+        daemon_reload: true
