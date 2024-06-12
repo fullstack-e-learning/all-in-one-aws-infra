@@ -128,14 +128,15 @@ jobs:
       run: |
         terraform output -raw tls_private_key >> id_rsa.pem
         chmod 400 id_rsa.pem
-    - name: Application Version
-      if: inputs.applicationVersion == 'latest'
-      run: echo "Evaluate Version"
     
     - name: Ansible Playbook
       if: inputs.operation == 'apply' && github.event_name != 'pull_request'
       run: |
-        ansible-playbook -i ansible/inventory.yml ansible/playbook.yml -e deployment_version=1.0.16
+        ansible-playbook -i ansible/inventory.yml \
+          ansible/playbook.yml \
+          -e docker_registry_username= ${{ github.actor }} \
+          -e docker_registry_password= ${{ secrets.GITHUB_TOKEN }} \
+          -e deployment_version=${{ inputs.applicationVersion }}
   
   terraform-destroy:
     runs-on: ubuntu-latest

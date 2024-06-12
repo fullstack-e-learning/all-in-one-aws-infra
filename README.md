@@ -31,6 +31,12 @@ terraform destroy --auto-approve
 ```
 
 #### ansible
+
+[ansible built-in module](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/index.html)
+
+
+[ansible community module](https://docs.ansible.com/ansible/latest/collections/community/docker/index.html)
+
 ```sh
 # ansible module to parse terrform state file for dynamic inventory
 ansible-galaxy collection install cloud.terraform
