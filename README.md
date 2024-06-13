@@ -44,6 +44,6 @@ ansible-playbook -i ansible/inventory.yml ansible/playbook.yml -e application_ve
 
 Different way of deploying the application:
 
-- [ec2-jar](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-jar)
-- [ec2-docker](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker)
-- [ec2-docker-compose](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker-compose)
+- Jar deployment on Ec2 [ec2-jar](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-jar)
+- Runing the application as a Docker container [ec2-docker](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker)
+- Running the application as a docker-compose [ec2-docker-compose](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker-compose)
