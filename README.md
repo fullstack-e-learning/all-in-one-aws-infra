@@ -39,3 +39,11 @@ ansible-inventory -i ansible/inventory.yml --list --vars
 # playbook
 ansible-playbook -i ansible/inventory.yml ansible/playbook.yml -e application_version=1.0.13 
 ```
+
+# deployment
+
+Different way of deploying the application:
+
+- [ec2-jar](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-jar)
+- [ec2-docker](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker)
+- [ec2-docker-compose](https://github.com/fullstack-e-learning/all-in-one-aws-infra/tree/ec2-docker-compose)
