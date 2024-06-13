@@ -67,28 +67,32 @@
       fstype: nfs4
       opts: nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport
       state: mounted
+  
+  - name: Prepare & Copy docker-compose.yml
+    ansible.builtin.template:
+      src: docker-compose.yml.j2
+      dest: {{ app_directory }}
+      mode: 0755
+      owner: ubuntu
+      group: ubuntu
+  
   - name: Docker Login
     ansible.builtin.shell: |
       docker login ghcr.io -u {{ docker_registry_username }} -p {{ docker_registry_password }}
+  
   - name: Docker Run
-    ansible.builtin.shell: 
+    ansible.builtin.shell:
+      chdir: {{ app_directory }}
       cmd: |
-        docker container rm -f all-in-one
-
-        docker run \
-          --name all-in-one \
-          -v {{ mount_directory }}:/usr/data \
-          -e BASE_PATH=/usr/data \
-          -e DB_HOST='jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}' \
-          -e DB_USERNAME='{{ hostvars[inventory_hostname].db_username }}' \
-          -e DB_PASSWORD='{{ hostvars[inventory_hostname].db_password }}' \
-          -u root \
-          --network=host \
-          -d \
-          ghcr.io/fullstack-e-learning/all-in-one:{{ deployment_version }}
+        #stop first
+        docker compose -d -f docker-compose.yml down
+        # then run
+        docker compose -d -f docker-compose.yml up
+      
   - name: Docker log
-    ansible.builtin.shell: 
-      cmd: docker logs all-in-one
+    ansible.builtin.shell:
+      chdir: {{ app_directory }}
+      cmd: docker compose logs 
     register: dockerlogs
   
   - name: Print dockerlogs
