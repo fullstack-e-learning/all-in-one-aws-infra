@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  all-in-one:
+    image: ghcr.io/fullstack-e-learning/all-in-one:070620242140
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: "jdbc:postgresql://${DB_ENDPOINT}/${DB_NAME}"
+      DB_USERNAME: "${DB_USERNAME}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      BASE_PATH: "${BASE_PATH}"
+    volumes:
+      - upload:/workspace/photo
+    user: root:root
+    networks:
+      - appnetwork
+
+volumes:
+  upload:
+
+networks:
+  appnetwork:
+    driver: bridge
