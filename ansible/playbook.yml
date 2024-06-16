@@ -5,7 +5,7 @@
   become: yes
   gather_facts: true
   vars:
-    deployment_version: 070620242140
+    deployment_version: 130620242108
     mount_directory: /home/ubuntu/efs
     app_directory: /home/ubuntu/app
   tasks:
@@ -71,7 +71,7 @@
   - name: Prepare & Copy docker-compose.yml
     ansible.builtin.template:
       src: docker-compose.yml.j2
-      dest: {{ app_directory }}
+      dest: "{{ app_directory }}/docker-compose.yml"
       mode: 0755
       owner: ubuntu
       group: ubuntu
@@ -82,16 +82,16 @@
   
   - name: Docker Run
     ansible.builtin.shell:
-      chdir: {{ app_directory }}
+      chdir: "{{ app_directory }}"
       cmd: |
         #stop first
-        docker compose -d -f docker-compose.yml down
+        docker compose -f docker-compose.yml down
         # then run
-        docker compose -d -f docker-compose.yml up
+        docker compose -f docker-compose.yml up -d
       
   - name: Docker log
     ansible.builtin.shell:
-      chdir: {{ app_directory }}
+      chdir: "{{ app_directory }}"
       cmd: docker compose logs 
     register: dockerlogs
   
