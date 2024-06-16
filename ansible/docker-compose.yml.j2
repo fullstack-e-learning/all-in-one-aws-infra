@@ -1,0 +1,16 @@
+services:
+  all-in-one:
+    image: ghcr.io/fullstack-e-learning/all-in-one:{{ deployment_version }}
+    container_name: all-in-one
+    restart: on-failure
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: 'jdbc:postgresql://{{ hostvars[inventory_hostname].db_endpoint }}/{{ hostvars[inventory_hostname].db_name }}'
+      DB_USERNAME: '{{ hostvars[inventory_hostname].db_username }}'
+      DB_PASSWORD: '{{ hostvars[inventory_hostname].db_password }}'
+      BASE_PATH: /usr/data
+    volumes:
+      - {{ mount_directory }}:/usr/data
+    network_mode: "host"
+    user: root:root
